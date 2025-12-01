@@ -1,12 +1,17 @@
 import os
 import re
+import json
 
 from typing import Optional
-from urllib.parse import urlparse, parse_qs
 
 from .download import download_audio_to_temp
 from .transcription import transcribe_audio
 from core.common.clients.gemini import generate_quiz
+
+
+class InvalidQuizError(Exception):
+    """Raised when the generated quiz is not valid JSON or does not match the expected shape."""
+    pass
 
 
 def _strip_code_fences(text: str) -> str:
@@ -14,9 +19,7 @@ def _strip_code_fences(text: str) -> str:
     if not text:
         return text
     s = text.strip()
-    # remove leading fence like ``` or ```json
     s = re.sub(r'^\s*```[^\n]*\n?', '', s, count=1)
-    # remove trailing fence
     s = re.sub(r'\n?```\s*$', '', s, count=1)
     return s.strip()
 
@@ -25,20 +28,36 @@ def build_quiz_from_youtube(
     url: str,
     whisper_model: str = "turbo",
     gemini_model: str = "gemini-2.5-flash",
-) -> str:
+) -> dict:
     """
     Download audio from a YouTube URL, transcribe it and generate a quiz with Gemini.
-    Returns the quiz (string, expected to be JSON).
-    The temporary audio file is deleted before returning.
-    Raises exceptions from the underlying steps on failure.
+    Returns a dict (parsed JSON) matching the expected quiz structure.
+    Raises InvalidQuizError if the returned text cannot be parsed to JSON.
     """
-
     temp_path: Optional[str] = None
     try:
         temp_path = download_audio_to_temp(url)
         transcript = transcribe_audio(temp_path, whisper_model)
-        quiz = generate_quiz(transcript, model=gemini_model)
-        return _strip_code_fences(quiz)
+        quiz_text = generate_quiz(transcript, model=gemini_model)
+
+        # strip code fences -> still a string
+        stripped = _strip_code_fences(quiz_text)
+        if not stripped:
+            raise InvalidQuizError("Blank answer from the quiz generator.")
+
+        # If generate_quiz already returned a dict, handle that too:
+        if isinstance(stripped, dict):
+            return stripped
+
+        # now parse JSON
+        try:
+            quiz_obj = json.loads(stripped)
+        except json.JSONDecodeError as e:
+            # optionally: include underlying text in logs but not in error to client
+            raise InvalidQuizError(
+                "The response provided by the generator is not valid JSON.") from e
+        return quiz_obj
+
     finally:
         if temp_path:
             try:
