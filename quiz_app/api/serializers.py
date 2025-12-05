@@ -51,6 +51,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class QuizSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True)
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Quiz
@@ -62,22 +63,15 @@ class QuizSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "questions",
+            "user",
         ]
-
-    def validate_questions(self, value):
-        if len(value) != 10:
-            raise serializers.ValidationError(
-                "A quiz must contain exactly 10 questions.")
-        return value
 
     def create(self, validated_data):
         questions_data = validated_data.pop("questions")
-
-        quiz = Quiz.objects.create(**validated_data)
+        user = self.context.get("user")
+        quiz = Quiz.objects.create(user=user, **validated_data)
 
         for q in questions_data:
             Question.objects.create(quiz=quiz, **q)
 
         return quiz
-
-        

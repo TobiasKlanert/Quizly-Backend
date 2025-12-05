@@ -20,7 +20,7 @@ class QuizCreateAPIView(APIView):
             quiz_dict = build_quiz_from_youtube(url)
             quiz_dict["video_url"] = url
 
-            serializer = QuizSerializer(data=quiz_dict)
+            serializer = QuizSerializer(data=quiz_dict, context={"user": request.user})
             serializer.is_valid(raise_exception=True)
             quiz = serializer.save()
 
@@ -28,7 +28,6 @@ class QuizCreateAPIView(APIView):
 
         except ValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
         except Exception:
             return Response({"detail": "Internal Server Error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
