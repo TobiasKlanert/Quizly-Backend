@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 
 from .serializers import UrlInputSerializer, QuizSerializer
+from quiz_app.models import Quiz
 from quiz_app.services.quiz_builder import build_quiz_from_youtube
 
 
@@ -20,7 +21,8 @@ class QuizCreateAPIView(APIView):
             quiz_dict = build_quiz_from_youtube(url)
             quiz_dict["video_url"] = url
 
-            serializer = QuizSerializer(data=quiz_dict, context={"user": request.user})
+            serializer = QuizSerializer(
+                data=quiz_dict, context={"user": request.user})
             serializer.is_valid(raise_exception=True)
             quiz = serializer.save()
 
@@ -32,3 +34,11 @@ class QuizCreateAPIView(APIView):
             return Response({"detail": "Internal Server Error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class QuizListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        quizzes = Quiz.objects.filter(user=request.user).prefetch_related(
+            'questions').order_by('-created_at')
+        serializer = QuizSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
