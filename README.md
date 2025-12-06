@@ -15,18 +15,58 @@ Backend service that turns YouTube videos into multiple-choice quizzes using Dja
 - Environment variable `GEMINI_API_KEY` set to a valid key.
 - (Optional) GPU for faster Whisper transcription; first run downloads the Whisper model.
 
-## Quickstart
-1. Create and activate a virtual environment:
-   - Windows: py -m venv env && .\\env\\Scripts\\activate
-   - macOS/Linux: python3 -m venv env && source env/bin/activate
-2. Install dependencies: pip install -r requirements.txt
-3. Set the Gemini key:
-   - Windows: set GEMINI_API_KEY=your-key
-   - macOS/Linux: export GEMINI_API_KEY=your-key
-4. Apply migrations: python manage.py migrate
-5. (Optional) Create an admin user: python manage.py createsuperuser
-6. Start the dev server: python manage.py runserver
-7. Open http://127.0.0.1:8000/admin/ for Django admin or hit the API endpoints under /api/.
+## Getting Started (Local)
+### 1) Clone and enter the project directory
+
+```
+git clone https://github.com/TobiasKlanert/Quizly-Backend.git
+cd Coderr-Backend
+```
+
+### 2) Create and activate a virtual environment
+
+```
+python -m venv env
+# Windows
+.\env\Scripts\activate
+# macOS/Linux
+source env/bin/activate
+```
+
+### 3) Install dependencies
+
+```
+pip install -r requirements.txt
+```
+
+### 4) Set the Gemini key
+
+```
+# Windows 
+set GEMINI_API_KEY=your-key
+# macOS/Linux 
+export GEMINI_API_KEY=your-key
+```
+
+### 5) Apply migrations 
+
+```
+python manage.py migrate
+```
+
+### 6) (Optional) Create an admin user to access `/admin/`
+
+```
+python manage.py createsuperuser
+```
+
+### 7) Run the development server
+
+```
+python manage.py runserver
+```
+
+The API will be available at `http://127.0.0.1:8000/`.
 
 ## API Reference
 Authentication (cookies are `access_token` + `refresh_token`):
@@ -49,10 +89,12 @@ Quizzes (all require authentication):
 4. Serializers validate that each question has exactly four options and a matching answer before storing.
 
 ## Configuration Notes
-- Default DB is SQLite at db.sqlite3; update DATABASES in core/settings.py for other backends.
-- CORS_ALLOWED_ORIGINS is set to http://127.0.0.1:5500. Adjust for your frontend host(s).
+- `SECRET_KEY`: Currently hardcoded for development. For production, set this from an environment variable and keep it secret.
+- `DEBUG`: Set to `True` for development. Must be `False` in production.
+- `ALLOWED_HOSTS`: Add your domain(s) or IPs for production.
+- `DATABASES`: Uses SQLite by default. Switch to Postgres/MySQL for production.
+- `CORS_ALLOWED_ORIGINS`: Add your frontend origin(s). Defaults to `http://127.0.0.1:5500`.
 - Cookies are set with secure=True and samesite=Lax; browsers require HTTPS to persist them. For local HTTP testing, consider toggling secure in auth_app/api/views.py.
-- DEBUG=True by default; set DEBUG=False and configure ALLOWED_HOSTS for production.
 
 ## Troubleshooting
 - Missing cookies in the browser? Ensure you are using HTTPS or relax the secure flag for local development.
