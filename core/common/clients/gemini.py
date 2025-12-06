@@ -1,3 +1,5 @@
+"""Client utilities for generating quizzes via Google Gemini."""
+
 import os
 from google import genai
 

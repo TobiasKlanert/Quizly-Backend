@@ -1,3 +1,5 @@
+"""Pipeline to download, transcribe, and generate quiz JSON from YouTube audio."""
+
 import os
 import re
 import json

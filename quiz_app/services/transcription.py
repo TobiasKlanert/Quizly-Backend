@@ -1,3 +1,4 @@
+"""Transcribe audio using OpenAI Whisper; raises if Whisper is unavailable."""
 
 
 def transcribe_audio(file_path: str, whisper_model: str = 'turbo') -> str:

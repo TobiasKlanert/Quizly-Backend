@@ -1,3 +1,5 @@
+"""Helpers to download YouTube audio to a temp file for quiz generation."""
+
 import os
 import tempfile
 import yt_dlp
