@@ -20,7 +20,7 @@ Backend service that turns YouTube videos into multiple-choice quizzes using Dja
 
 ```
 git clone https://github.com/TobiasKlanert/Quizly-Backend.git
-cd Coderr-Backend
+cd Quizly-Backend
 ```
 
 ### 2) Create and activate a virtual environment
