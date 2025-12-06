@@ -1,9 +1,18 @@
+"""Serializers for user registration and JWT login responses.
+
+- `RegistrationSerializer` handles user creation with password confirmation and
+  unique email validation.
+- `CustomTokenObtainPairSerializer` augments the JWT login response with basic
+  user info for convenience on the frontend.
+"""
+
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """Create a new user while enforcing email uniqueness and password match."""
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -40,6 +49,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Extend JWT pair response with minimal user details."""
 
     def validate(self, attrs):
         data = super().validate(attrs)

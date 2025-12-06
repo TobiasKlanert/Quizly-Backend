@@ -1,3 +1,5 @@
+"""URL routes for authentication: register, login, logout, and token refresh."""
+
 from django.urls import path
 from .views import RegistrationView, CookieTokenObtainPairView, LogoutCookieView, CookieRefreshView
 

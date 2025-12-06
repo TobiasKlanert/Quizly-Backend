@@ -1,3 +1,5 @@
+"""Authentication views using JWT stored in HTTP-only cookies."""
+
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -11,6 +13,7 @@ from .serializers import RegistrationSerializer, CustomTokenObtainPairSerializer
 
 
 class RegistrationView(APIView):
+    """Register a new user account."""
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -31,6 +34,7 @@ User = get_user_model()
 
 
 class CookieTokenObtainPairView(TokenObtainPairView):
+    """Issue JWT pair and set them as secure HTTP-only cookies."""
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
@@ -66,6 +70,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 
 
 class LogoutCookieView(APIView):
+    """Blacklist refresh token (if present) and clear auth cookies."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -86,6 +91,8 @@ class LogoutCookieView(APIView):
 
 
 class CookieRefreshView(TokenRefreshView):
+    """Refresh access token using the refresh cookie."""
+
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get('refresh_token')
 
