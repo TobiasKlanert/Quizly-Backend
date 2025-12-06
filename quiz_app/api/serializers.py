@@ -1,3 +1,5 @@
+"""Serializers for quiz API: URL validation, question structure, and quiz CRUD."""
+
 import re
 
 from rest_framework import serializers
@@ -14,6 +16,7 @@ YOUTUBE_REGEX = re.compile(
 
 
 class UrlInputSerializer(serializers.Serializer):
+    """Validate a YouTube URL used to generate a quiz."""
     url = serializers.URLField()
 
     def validate_url(self, value):
@@ -23,6 +26,7 @@ class UrlInputSerializer(serializers.Serializer):
 
 
 class QuestionSerializer(serializers.ModelSerializer):
+    """Serialize a quiz question ensuring exactly four options and a valid answer."""
     class Meta:
         model = Question
         fields = [

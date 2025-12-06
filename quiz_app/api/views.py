@@ -1,3 +1,5 @@
+"""API views for creating, listing, retrieving, updating, and deleting quizzes."""
+
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,6 +13,7 @@ from quiz_app.services.quiz_builder import build_quiz_from_youtube
 
 
 class QuizCreateAPIView(APIView):
+    """Create a quiz from a YouTube URL via download, transcription, and Gemini generation."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
@@ -36,6 +39,7 @@ class QuizCreateAPIView(APIView):
 
 
 class QuizListAPIView(APIView):
+    """List quizzes belonging to the authenticated user."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
@@ -46,6 +50,7 @@ class QuizListAPIView(APIView):
 
 
 class QuizDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a single quiz; enforces ownership."""
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
     permission_classes = [IsAuthenticated, IsQuizOwner]

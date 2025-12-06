@@ -1,8 +1,12 @@
+"""Database models for quizzes and their questions."""
+
 from django.db import models
 from django.conf import settings
 
 
 class Quiz(models.Model):
+    """A generated quiz tied to the owning user and source video."""
+
     title = models.CharField(max_length=255)
     description = models.TextField()
     video_url = models.URLField()
@@ -18,6 +22,8 @@ class Quiz(models.Model):
 
 
 class Question(models.Model):
+    """A multiple-choice question belonging to a quiz."""
+
     quiz = models.ForeignKey(
         Quiz, related_name="questions", on_delete=models.CASCADE)
 
