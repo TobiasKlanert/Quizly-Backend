@@ -10,23 +10,34 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ncn8+6bxtp+woydipl7p2_hnze0)2-$*a!i8g58f$a1u%@xhb4'
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is not set. Add it to your .env file.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+def _env_list(value, default):
+    if not value:
+        return default
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+ALLOWED_HOSTS = _env_list(os.getenv("ALLOWED_HOSTS"), [])
 
 
 # Application definition
@@ -139,8 +150,11 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1)
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5500",
-]
+CORS_ALLOWED_ORIGINS = _env_list(
+    os.getenv("CORS_ALLOWED_ORIGINS"),
+    [
+        "http://127.0.0.1:5500",
+    ],
+)
 
 CORS_ALLOW_CREDENTIALS = True

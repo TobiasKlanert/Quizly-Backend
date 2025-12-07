@@ -1,17 +1,24 @@
 """Client utilities for generating quizzes via Google Gemini."""
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv, dotenv_values
 from google import genai
+
+# Prefer loading from the project .env.
+BASE_DIR = Path(__file__).resolve().parents[3]
+load_dotenv(BASE_DIR / ".env")
 
 
 # The client gets the API key from the environment variable `GEMINI_API_KEY`.
 
 def get_client():
     """Create and return a genai.Client. Raise a clear error if API key is missing."""
-    api_key = os.getenv('GEMINI_API_KEY')
+    api_key = dotenv_values(BASE_DIR / ".env").get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "GEMINI_API_KEY is not set. Set it in the environment before calling generate_quiz()."
+            "GEMINI_API_KEY is not set. Add it to your .env file before calling generate_quiz()."
         )
     return genai.Client(api_key=api_key)
 
