@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 
 from .serializers import RegistrationSerializer, CustomTokenObtainPairSerializer
@@ -54,7 +55,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             key='access_token',
             value=str(access),
             httponly=True,
-            secure=True,
+            secure=not settings.DEBUG,
             samesite='Lax'
         )
 
@@ -62,7 +63,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             key='refresh_token',
             value=str(refresh),
             httponly=True,
-            secure=True,
+            secure=not settings.DEBUG,
             samesite='Lax'
         )
 
@@ -123,7 +124,7 @@ class CookieRefreshView(TokenRefreshView):
             key='access_token',
             value=access_token,
             httponly=True,
-            secure=True,
+            secure=not settings.DEBUG,
             samesite='Lax'
         )
 
