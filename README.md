@@ -12,7 +12,7 @@ Backend service that turns YouTube videos into multiple-choice quizzes using Dja
 - Python 3.11+ and pip/virtualenv.
 - FFmpeg installed and available on PATH (required by yt-dlp and Whisper).
 - Network access to YouTube and Google Gemini APIs.
-- Environment variable `GEMINI_API_KEY` set to a valid key.
+- A `.env` file in the project root with `GEMINI_API_KEY=<your-key>`, `SECRET_KEY=<your-django-secret>`, and any host/origin overrides.
 - (Optional) GPU for faster Whisper transcription; first run downloads the Whisper model.
 
 ## Getting Started (Local)
@@ -39,13 +39,32 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4) Set the Gemini key
+### 4) Set environment variables in .env
+
+Create a `.env` file in the project root (or edit the existing one) and add:
 
 ```
-# Windows 
-set GEMINI_API_KEY=your-key
-# macOS/Linux 
-export GEMINI_API_KEY=your-key
+GEMINI_API_KEY=your-key
+SECRET_KEY=your-django-secret
+ALLOWED_HOSTS=127.0.0.1,localhost
+CORS_ALLOWED_ORIGINS=http://127.0.0.1:5500
+```
+
+Commands to create it quickly:
+```
+# macOS/Linux (creates or overwrites)
+cat <<'EOF' > .env
+GEMINI_API_KEY=your-key
+SECRET_KEY=your-django-secret
+ALLOWED_HOSTS=127.0.0.1,localhost
+CORS_ALLOWED_ORIGINS=http://127.0.0.1:5500
+EOF
+
+# Windows PowerShell (creates or overwrites)
+Set-Content .env "GEMINI_API_KEY=your-key"
+Add-Content .env "SECRET_KEY=your-django-secret"
+Add-Content .env "ALLOWED_HOSTS=127.0.0.1,localhost"
+Add-Content .env "CORS_ALLOWED_ORIGINS=http://127.0.0.1:5500"
 ```
 
 ### 5) Apply migrations 
@@ -85,7 +104,7 @@ Quizzes (all require authentication):
 ## Quiz Generation Pipeline
 1. yt_dlp downloads the YouTube audio track (needs FFmpeg).
 2. openai-whisper transcribes the audio (quiz_app/services/transcription.py, model `turbo` by default).
-3. Google Gemini (core/common/clients/gemini.py, model `gemini-2.5-flash`) builds quiz JSON; `GEMINI_API_KEY` must be set.
+3. Google Gemini (core/common/clients/gemini.py, model `gemini-2.5-flash`) builds quiz JSON; `GEMINI_API_KEY` must be set in `.env`.
 4. Serializers validate that each question has exactly four options and a matching answer before storing.
 
 ## Configuration Notes
@@ -99,5 +118,5 @@ Quizzes (all require authentication):
 ## Troubleshooting
 - Missing cookies in the browser? Ensure you are using HTTPS or relax the secure flag for local development.
 - yt_dlp errors like FFmpegExtractAudio -> install FFmpeg and confirm it is on PATH.
-- RuntimeError: GEMINI_API_KEY is not set -> export the key before starting the server.
+- RuntimeError: GEMINI_API_KEY is not set -> add it to `.env` before starting the server.
 - Long first request times come from Whisper downloading models; this is expected.
