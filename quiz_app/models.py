@@ -3,13 +3,15 @@
 from django.db import models
 from django.conf import settings
 
+from quiz_app.services.utils import YOUTUBE_URL_VALIDATOR
+
 
 class Quiz(models.Model):
     """A generated quiz tied to the owning user and source video."""
 
     title = models.CharField(max_length=255)
     description = models.TextField()
-    video_url = models.URLField()
+    video_url = models.URLField(validators=[YOUTUBE_URL_VALIDATOR])
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

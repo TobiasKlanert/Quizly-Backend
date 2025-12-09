@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 
-from .serializers import UrlInputSerializer, QuizSerializer
+from .serializers import QuizSerializer
 from .permissions import IsQuizOwner
 from quiz_app.models import Quiz
 from quiz_app.services.quiz_builder import build_quiz_from_youtube
@@ -17,9 +17,14 @@ class QuizCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        input_serializer = UrlInputSerializer(data=request.data)
-        input_serializer.is_valid(raise_exception=True)
-        url = input_serializer.validated_data["url"]
+        # Frontend sends `url`; serializer maps it to `video_url`.
+        serializer = QuizSerializer(
+            data={"url": request.data.get("url")},
+            context={"user": request.user},
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        url = serializer.validated_data["video_url"]
 
         try:
             quiz_dict = build_quiz_from_youtube(url)

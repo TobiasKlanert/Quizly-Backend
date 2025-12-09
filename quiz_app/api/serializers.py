@@ -1,28 +1,7 @@
 """Serializers for quiz API: URL validation, question structure, and quiz CRUD."""
-
-import re
-
 from rest_framework import serializers
 from quiz_app.models import Quiz, Question
-
-
-YOUTUBE_REGEX = re.compile(
-    r'^(https?://)?(www\.)?'
-    r'(youtube\.com/(watch\?v=|shorts/)|youtu\.be/)'
-    r'(?P<id>[\w-]{11})'
-    r'([&?].*)?$',
-    re.IGNORECASE
-)
-
-
-class UrlInputSerializer(serializers.Serializer):
-    """Validate a YouTube URL used to generate a quiz."""
-    url = serializers.URLField()
-
-    def validate_url(self, value):
-        if not YOUTUBE_REGEX.match(value):
-            raise serializers.ValidationError("Invalid YouTube-URL.")
-        return value
+from quiz_app.services.utils import YOUTUBE_URL_VALIDATOR
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -56,6 +35,13 @@ class QuestionSerializer(serializers.ModelSerializer):
 class QuizSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True)
     user = serializers.PrimaryKeyRelatedField(read_only=True)
+    # Accept frontend field name `url` but map it to model field `video_url`.
+    url = serializers.URLField(
+        write_only=True,
+        required=False,
+        source="video_url",
+        validators=[YOUTUBE_URL_VALIDATOR],
+    )
 
     class Meta:
         model = Quiz
@@ -64,6 +50,7 @@ class QuizSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "video_url",
+            "url",
             "created_at",
             "updated_at",
             "questions",
