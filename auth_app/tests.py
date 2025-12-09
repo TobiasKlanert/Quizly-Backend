@@ -6,6 +6,30 @@ from django.contrib.auth.models import User
 
 
 class AuthApiTests(APITestCase):
+    """
+    APITestCase verifying the behavior of the authentication API endpoints.
+
+    Tests included:
+    - test_register_creates_user_and_enforces_unique_email:
+        Verifies that a POST to /api/register/ creates a new User when given
+        valid credentials and that registering with a duplicate email returns
+        HTTP 400 with an 'email' validation error.
+
+    - test_login_sets_http_only_cookies:
+        Verifies that a POST to /api/login/ with valid credentials returns HTTP 200,
+        includes 'access_token' and 'refresh_token' cookies, and returns the
+        authenticated user's username in the response payload.
+
+    - test_logout_blacklists_refresh_and_clears_cookies:
+        Verifies that an authenticated POST to /api/logout/ returns HTTP 200 and
+        clears the authentication cookies (access_token and refresh_token), i.e.
+        the cookies are present but have empty values after logout.
+
+    - test_refresh_issues_new_access_token_from_cookie:
+        Verifies that POSTing to /api/token/refresh/ using a valid refresh token
+        stored in the client's 'refresh_token' cookie returns HTTP 200, includes
+        a new access token in the response body, and sets an 'access_token' cookie.
+    """
     def test_register_creates_user_and_enforces_unique_email(self):
         payload = {
             "username": "alice",

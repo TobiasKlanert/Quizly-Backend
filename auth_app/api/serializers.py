@@ -1,18 +1,25 @@
-"""Serializers for user registration and JWT login responses.
-
-- `RegistrationSerializer` handles user creation with password confirmation and
-  unique email validation.
-- `CustomTokenObtainPairSerializer` augments the JWT login response with basic
-  user info for convenience on the frontend.
-"""
-
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.models import User
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
-    """Create a new user while enforcing email uniqueness and password match."""
+    """Serializer for creating a new User while enforcing email uniqueness and password confirmation.
+    This ModelSerializer exposes the following fields:
+    - username: the desired username for the new account.
+    - password: write-only password for the account (will be hashed via set_password()).
+    - confirmed_password: write-only field used to verify the password matches.
+    - email: required email address which must be unique among users.
+    Validation:
+    - validate_confirmed_password ensures that the provided password and confirmed_password match,
+        raising serializers.ValidationError('Passwords do not match') when they differ.
+    - validate_email ensures the provided email is not already in use, raising
+        serializers.ValidationError('Email already exists') if a duplicate is found.
+    Behavior:
+    - On successful validation, save() constructs a new User instance with the given username and email,
+        uses set_password() to hash and set the password, saves the instance to the database, and returns it.
+    - Password and confirmed_password are write-only and are not exposed in serialized output.
+    """
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -49,7 +56,21 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Extend JWT pair response with minimal user details."""
+    """
+    Extend TokenObtainPairSerializer to include minimal user details in the JWT response.
+    This serializer delegates authentication and token creation to
+    TokenObtainPairSerializer.validate(attrs) and then augments the returned
+    data with a "user" mapping containing the authenticated user's id,
+    username, and email.
+    Returned data:
+    - preserves the default token keys produced by the parent (e.g. "access",
+        "refresh")
+    - adds a "user" dict: {"id": int, "username": str, "email": str}
+    Notes:
+    - The parent validate() is responsible for authentication and raising any
+        authentication errors; this class only enriches the successful response.
+    - Avoids exposing additional or sensitive user fields.
+    """
 
     def validate(self, attrs):
         data = super().validate(attrs)
