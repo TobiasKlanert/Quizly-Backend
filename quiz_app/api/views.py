@@ -8,12 +8,25 @@ from rest_framework.permissions import IsAuthenticated
 
 from .serializers import QuizSerializer
 from .permissions import IsQuizOwner
+
 from quiz_app.models import Quiz
 from quiz_app.services.quiz_builder import build_quiz_from_youtube
 
 
 class QuizCreateAPIView(APIView):
-    """Create a quiz from a YouTube URL via download, transcription, and Gemini generation."""
+    """
+    Create a Quiz from a YouTube URL by downloading the video, transcribing it, and generating quiz content.
+    Expected behavior:
+    - Authentication: Requires an authenticated user (permission_classes = [IsAuthenticated]).
+    - Input: Expects a POST body containing 'url' (the frontend field), which is mapped to 'video_url' by the initial serializer.
+    - Validation: Validates the provided URL using QuizSerializer (context includes the requesting user; initial validation is partial to accept just the URL).
+    - Generation: Calls build_quiz_from_youtube(url) to perform video download, transcription, and automatic quiz generation; the returned dict is augmented with 'video_url'.
+    - Persistence: Validates the generated quiz payload with QuizSerializer (with user context) and saves a Quiz instance.
+    - Response: On success returns the serialized Quiz and HTTP 201 Created.
+    Error handling:
+    - Raises/returns HTTP 400 with a validation error detail when serializer/model validation fails (ValidationError).
+    - Returns HTTP 500 with a generic error message for unexpected exceptions.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
@@ -44,7 +57,18 @@ class QuizCreateAPIView(APIView):
 
 
 class QuizListAPIView(APIView):
-    """List quizzes belonging to the authenticated user."""
+    """List quizzes belonging to the authenticated user.
+    Handles GET requests and returns a serialized list of Quiz objects
+    owned by the requesting user. The queryset is limited to quizzes
+    where Quiz.user == request.user, prefetches related 'questions' to
+    minimize additional database queries, and is ordered by newest first
+    ('-created_at').
+    Authentication and permissions:
+    - Requires authentication (IsAuthenticated). Anonymous users will be denied.
+    Response:
+    - On success returns HTTP 200 with serializer data produced by QuizSerializer(many=True).
+        The exact fields and nested question representation are defined by QuizSerializer.
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
@@ -55,7 +79,25 @@ class QuizListAPIView(APIView):
 
 
 class QuizDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update, or delete a single quiz; enforces ownership."""
+    """
+    Retrieve, update, or delete a single Quiz instance while enforcing authentication and ownership.
+    This view extends DRF's RetrieveUpdateDestroyAPIView to provide endpoint handlers for:
+    - GET: retrieve a single Quiz instance.
+    - PATCH: partially update fields on the Quiz (serializer validation is applied).
+    - DELETE: remove the Quiz instance.
+    Behavior and guarantees:
+    - Access is restricted to authenticated users who also pass the IsQuizOwner permission check.
+    - The view uses QuizSerializer for input validation and output representation.
+    - Partial updates via PATCH use serializer.save() and return a 200 OK with the serialized object on success, or 400 Bad Request with validation errors on failure.
+    - Deletions delegate to the generic destroy() implementation and will return the standard DRF response (typically 204 No Content) on success.
+    - If the requested object does not exist or the user lacks permission, DRF will raise the appropriate errors (Http404 or PermissionDenied) before the handler code is executed.
+    Attributes:
+        queryset (QuerySet): Quiz.objects.all()
+        serializer_class (Serializer): QuizSerializer
+        permission_classes (list): [IsAuthenticated, IsQuizOwner]
+    Notes:
+    - PUT (full update) is supported by the base class but is not overridden here.
+    """
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
     permission_classes = [IsAuthenticated, IsQuizOwner]

@@ -8,6 +8,48 @@ from quiz_app.models import Quiz, Question
 
 
 class QuizApiTests(APITestCase):
+    """
+    Test suite for Quiz API endpoints using Django REST Framework's APITestCase.
+
+    This class verifies behavior for creating, listing, viewing, and updating quizzes,
+    including ownership and integration with an external YouTube-to-quiz builder.
+
+    SetUp and helpers
+    - setUp:
+        - Creates two users: `self.user` (owner) and `self.other_user`.
+        - Stores a sample YouTube URL in `self.youtube_url`.
+    - _sample_quiz_payload():
+        - Returns a representative payload (dict) that mimics the data produced by the
+          external YouTube-to-quiz builder: a quiz title, description, and two questions
+          (each with options and an answer).
+    - _create_quiz_for_user(user, title="User quiz"):
+        - Creates a Quiz instance associated with `user` and one Question for that quiz,
+          using `self.youtube_url` as the video URL. Returns the created Quiz.
+
+    Tests
+    - test_create_quiz_from_youtube_url:
+        - Patches the external builder function to return the sample payload.
+        - Authenticates as `self.user` and POSTs the YouTube URL to the create-quiz endpoint.
+        - Asserts a 201 CREATED response, that one Quiz was persisted, that its
+          `video_url` matches the provided URL, and that the quiz contains the expected
+          number of Question objects (2).
+
+    - test_list_quizzes_returns_only_authenticated_users_items:
+        - Creates one quiz for `self.user` and another for `self.other_user`.
+        - Authenticates as `self.user` and GETs the quizzes list endpoint.
+        - Asserts a 200 OK response and that the returned list contains only the
+          authenticated user's quiz (by length and title).
+
+    - test_detail_forbidden_for_non_owner:
+        - Creates a quiz owned by `self.other_user`.
+        - Authenticates as `self.user` and attempts to GET the detail endpoint for that quiz.
+        - Asserts a 403 FORBIDDEN response to enforce that non-owners cannot view details.
+
+    - test_patch_updates_quiz_title:
+        - Creates a quiz owned by `self.user`.
+        - Authenticates as `self.user` and PATCHes the quiz to change the title.
+        - Asserts a 200 OK response and verifies the change persisted in the database.
+    """
     def setUp(self):
         self.user = User.objects.create_user(
             username="quizowner", email="owner@example.com", password="secret123"
