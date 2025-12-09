@@ -14,7 +14,18 @@ load_dotenv(BASE_DIR / ".env")
 # The client gets the API key from the environment variable `GEMINI_API_KEY`.
 
 def get_client():
-    """Create and return a genai.Client. Raise a clear error if API key is missing."""
+    """Create and return a configured genai.Client.
+
+    Reads the GEMINI_API_KEY from the .env file located at BASE_DIR / ".env" using dotenv_values.
+    If the environment variable is missing or empty, raises a RuntimeError with a clear message
+    instructing the user to add GEMINI_API_KEY to the .env file.
+
+    Returns:
+      genai.Client: A genai client instance initialized with the retrieved API key.
+
+    Raises:
+      RuntimeError: If GEMINI_API_KEY is not set in the .env file.
+    """
     api_key = dotenv_values(BASE_DIR / ".env").get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError(
@@ -69,7 +80,34 @@ Requirements:
 
 
 def generate_quiz(transcript, model="gemini-2.5-flash"):
-    """Generate a quiz from transcript. Raises RuntimeError if GEMINI_API_KEY missing."""
+    """
+    Generate a quiz from a transcript using a Gemini model.
+
+    Parameters
+    ----------
+    transcript : str
+      The transcript text to use as source material. This text is appended to the module-level
+      TEMPLATE to form the prompt sent to the Gemini API.
+    model : str, optional
+      The identifier of the Gemini model to use (default: "gemini-2.5-flash").
+
+    Returns
+    -------
+    str
+      The textual quiz content produced by the Gemini API (taken from response.text).
+
+    Raises
+    ------
+    RuntimeError
+      If required credentials (e.g., GEMINI_API_KEY) are missing and get_client() cannot
+      construct a working client.
+
+    Notes
+    -----
+    - This function performs network I/O by calling get_client() and then client.models.generate_content.
+    - Prompt construction relies on a module-level TEMPLATE variable.
+    - Errors from the underlying client (network errors, API errors) may propagate to the caller.
+    """
     client = get_client()
     prompt = TEMPLATE + transcript
     response = client.models.generate_content(model=model, contents=prompt)
