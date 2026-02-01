@@ -87,6 +87,66 @@ python manage.py runserver
 
 The API will be available at `http://127.0.0.1:8000/`.
 
+
+# Docker Setup Guide
+
+This guide walks you through cloning the repository, configuring environment variables, building the Docker containers, and starting the server.
+
+## 1) Clone the repository
+
+```
+git clone https://github.com/TobiasKlanert/Quizly-Backend.git
+cd Quizly-Backend
+```
+
+## 2) Create the environment file
+
+Copy the example and edit it:
+
+```
+copy .env.example .env
+```
+
+Open `.env` and set at least:
+- `DJANGO_SECRET_KEY`
+- `POSTGRES_PASSWORD`
+- `GEMINI_API_KEY`
+
+## 3) Create the external Docker network (required for Caddy)
+
+```
+docker network create web
+```
+
+## 4) Build and start the containers
+
+```
+docker compose up -d --build
+```
+
+## 5) Run database migrations
+
+```
+docker compose exec app python manage.py migrate
+```
+
+## 6) (Optional) Create an admin user
+
+```
+docker compose exec app python manage.py createsuperuser
+```
+
+## 7) Start or restart the server
+
+If the containers are already running, you can restart them with:
+
+```
+docker compose restart
+```
+
+The API will be available on the internal container port `8000` and should be exposed via your reverse proxy (Caddy).
+
+
 ## API Reference
 Authentication (cookies are `access_token` + `refresh_token`):
 - POST /api/register/ with { "username": "...", "email": "...", "password": "...", "confirmed_password": "..." }
