@@ -11,33 +11,50 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
-from pathlib import Path
+import warnings
 from datetime import timedelta
-
-from dotenv import load_dotenv
+from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY is not set. Add it to your .env file.")
+def _env_str(name, default=None):
+    value = os.getenv(name, default)
+    return value if value is not None else default
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-def _env_list(value, default):
-    if not value:
+def _env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
         return default
+    value = value.strip().lower()
+    return value in {"1", "true", "yes", "y", "on"}
+
+
+def _env_list(name, default=None):
+    value = os.getenv(name)
+    if not value:
+        return default or []
     return [item.strip() for item in value.split(",") if item.strip()]
 
-ALLOWED_HOSTS = _env_list(os.getenv("ALLOWED_HOSTS"), [])
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = _env_bool("DJANGO_DEBUG", False)
+
+SECRET_KEY = _env_str("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        warnings.warn("DJANGO_SECRET_KEY is not set; using insecure dev key.")
+        SECRET_KEY = "insecure-dev-key"
+    else:
+        raise RuntimeError("DJANGO_SECRET_KEY is not set.")
+
+ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS", [])
 
 
 # Application definition
@@ -92,8 +109,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': _env_str('POSTGRES_DB', 'quizly'),
+        'USER': _env_str('POSTGRES_USER', 'quizly'),
+        'PASSWORD': _env_str('POSTGRES_PASSWORD', ''),
+        'HOST': _env_str('POSTGRES_HOST', 'db'),
+        'PORT': _env_str('POSTGRES_PORT', '5432'),
     }
 }
 
@@ -122,7 +143,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = _env_str('DJANGO_TIME_ZONE', 'Europe/Berlin')
 
 USE_I18N = True
 
@@ -132,7 +153,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = _env_str('DJANGO_STATIC_ROOT', '/app/staticfiles')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = _env_str('DJANGO_MEDIA_ROOT', '/app/media')
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS', [])
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # Leave False since TLS is terminated at the reverse proxy (Caddy).
+    SECURE_SSL_REDIRECT = False
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -150,11 +184,21 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1)
 }
 
-CORS_ALLOWED_ORIGINS = _env_list(
-    os.getenv("CORS_ALLOWED_ORIGINS"),
-    [
-        "http://127.0.0.1:5500",
-    ],
-)
+if 'corsheaders' in INSTALLED_APPS:
+    CORS_ALLOWED_ORIGINS = _env_list('DJANGO_CORS_ALLOWED_ORIGINS', [])
 
 CORS_ALLOW_CREDENTIALS = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': _env_str('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+}
